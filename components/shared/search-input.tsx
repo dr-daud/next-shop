@@ -1,22 +1,45 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Api } from "@/services/api-client";
+import { Product } from "@prisma/client";
 import { Search } from "lucide-react";
 import Link from "next/link";
-import React, { useRef, useState } from "react";
-import { useClickAway } from "react-use";
+import React, { useEffect, useRef, useState } from "react";
+import { useClickAway, useDebounce } from "react-use";
 
 interface Props {
   className?: string;
 }
 
 export const SearchInput: React.FC<Props> = ({ className }) => {
+  const [searchQuery, setSearchQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
   const ref = useRef(null);
 
   useClickAway(ref, () => {
     setFocused(false);
   });
+
+  useDebounce(
+    async () => {
+      try {
+        const response = await Api.products.search(searchQuery);
+        setProducts(response);
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    250,
+    [searchQuery]
+  );
+
+  const onClickItem = () => {
+    setFocused(false);
+    setSearchQuery("");
+    setProducts([]);
+  };
 
   return (
     <>
@@ -36,6 +59,8 @@ export const SearchInput: React.FC<Props> = ({ className }) => {
           type="text"
           placeholder="Найти пиццу..."
           onFocus={() => setFocused(true)}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
 
         <div
